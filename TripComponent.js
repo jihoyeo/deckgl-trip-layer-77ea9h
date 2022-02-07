@@ -1,40 +1,44 @@
 /* global window */
-import React, {Component} from 'react';
-import {render} from 'react-dom';
-import {StaticMap} from 'react-map-gl';
-import {AmbientLight, PointLight, LightingEffect} from '@deck.gl/core';
+import React, { Component } from 'react';
+import { render } from 'react-dom';
+import { StaticMap } from 'react-map-gl';
+import { AmbientLight, PointLight, LightingEffect } from '@deck.gl/core';
 import DeckGL from '@deck.gl/react';
-import {PolygonLayer} from '@deck.gl/layers';
-import {TripsLayer} from '@deck.gl/geo-layers';
+import { PolygonLayer } from '@deck.gl/layers';
+import { TripsLayer } from '@deck.gl/geo-layers';
+import { ScatterplotLayer } from '@deck.gl/layers';
 
 // Set your mapbox token here
-const MAPBOX_TOKEN = `pk.eyJ1Ijoia2F0YW1hcmFuaTQiLCJhIjoiY2s5aHkwcDV4MDM4NjNnbzVsZzB6ZTdsciJ9.hYltUXN0SyoWOtT5CP0qiA`; // eslint-disable-line
+const MAPBOX_TOKEN = `pk.eyJ1Ijoic3BlYXI1MzA2IiwiYSI6ImNremN5Z2FrOTI0ZGgycm45Mzh3dDV6OWQifQ.kXGWHPRjnVAEHgVgLzXn2g`; // eslint-disable-line
 
 // Source data CSV
 const DATA_URL = {
   BUILDINGS:
     'https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/trips/buildings.json', // eslint-disable-line
-  TRIPS: 'https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/trips/trips-v7.json' // eslint-disable-line
+  TRIPS:
+    'https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/trips/trips-v7.json', // eslint-disable-line
+  POINTS:
+    'https://raw.githubusercontent.com/pbeshai/deckgl-point-animation/master/src/data/libraries.json',
 };
 
 const ambientLight = new AmbientLight({
   color: [255, 255, 255],
-  intensity: 1.0
+  intensity: 1.0,
 });
 
 const pointLight = new PointLight({
   color: [255, 255, 255],
   intensity: 2.0,
-  position: [-74.05, 40.7, 8000]
+  position: [-74.05, 40.7, 8000],
 });
 
-const lightingEffect = new LightingEffect({ambientLight, pointLight});
+const lightingEffect = new LightingEffect({ ambientLight, pointLight });
 
 const material = {
   ambient: 0.1,
   diffuse: 0.6,
   shininess: 32,
-  specularColor: [60, 64, 70]
+  specularColor: [60, 64, 70],
 };
 
 const DEFAULT_THEME = {
@@ -42,7 +46,7 @@ const DEFAULT_THEME = {
   trailColor0: [253, 128, 93],
   trailColor1: [23, 184, 190],
   material,
-  effects: [lightingEffect]
+  effects: [lightingEffect],
 };
 
 const INITIAL_VIEW_STATE = {
@@ -50,16 +54,23 @@ const INITIAL_VIEW_STATE = {
   latitude: 40.72,
   zoom: 13,
   pitch: 45,
-  bearing: 0
+  bearing: 0,
 };
 
-const landCover = [[[-74.0, 40.7], [-74.02, 40.7], [-74.02, 40.72], [-74.0, 40.72]]];
+const landCover = [
+  [
+    [-74.0, 40.7],
+    [-74.02, 40.7],
+    [-74.02, 40.72],
+    [-74.0, 40.72],
+  ],
+];
 
 export default class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      time: 0
+      time: 0,
     };
   }
 
@@ -76,23 +87,26 @@ export default class App extends Component {
   _animate() {
     const {
       loopLength = 1800, // unit corresponds to the timestamp in source data
-      animationSpeed = 30 // unit time per second
+      animationSpeed = 30, // unit time per second
     } = this.props;
     const timestamp = Date.now() / 1000;
     const loopTime = loopLength / animationSpeed;
 
     this.setState({
-      time: ((timestamp % loopTime) / loopTime) * loopLength
+      time: ((timestamp % loopTime) / loopTime) * loopLength,
     });
-    this._animationFrame = window.requestAnimationFrame(this._animate.bind(this));
+    this._animationFrame = window.requestAnimationFrame(
+      this._animate.bind(this)
+    );
   }
 
   _renderLayers() {
     const {
       buildings = DATA_URL.BUILDINGS,
       trips = DATA_URL.TRIPS,
+      points = DATA_URL.POINTS,
       trailLength = 180,
-      theme = DEFAULT_THEME
+      theme = DEFAULT_THEME,
     } = this.props;
 
     return [
@@ -100,22 +114,23 @@ export default class App extends Component {
       new PolygonLayer({
         id: 'ground',
         data: landCover,
-        getPolygon: f => f,
+        getPolygon: (f) => f,
         stroked: false,
-        getFillColor: [0, 0, 0, 0]
+        getFillColor: [0, 0, 0, 0],
       }),
       new TripsLayer({
         id: 'trips',
         data: trips,
-        getPath: d => d.path,
-        getTimestamps: d => d.timestamps,
-        getColor: d => (d.vendor === 0 ? theme.trailColor0 : theme.trailColor1),
+        getPath: (d) => d.path,
+        getTimestamps: (d) => d.timestamps,
+        getColor: (d) =>
+          d.vendor === 0 ? theme.trailColor0 : theme.trailColor1,
         opacity: 0.3,
-        widthMinPixels: 2,
+        widthMinPixels: 5,
         rounded: true,
-        trailLength,
+        trailLength: 50,
         currentTime: this.state.time,
-        shadowEnabled: false
+        shadowEnabled: false,
       }),
       ,
       new PolygonLayer({
@@ -124,19 +139,31 @@ export default class App extends Component {
         extruded: true,
         wireframe: false,
         opacity: 0.5,
-        getPolygon: f => f.polygon,
-        getElevation: f => f.height,
+        getPolygon: (f) => f.polygon,
+        getElevation: (f) => f.height,
         getFillColor: theme.buildingColor,
-        material: theme.material
-      })
+        material: theme.material,
+      }),
+
+      new ScatterplotLayer({
+        id: 'scatterplot',
+        data: points, // load data from server
+        getPosition: (d) => d.position, // get lng,lat from each point
+        getColor: (d) => [0, 188, 255],
+        getRadius: (d) => 25,
+        opacity: 0.9,
+        pickable: false,
+        radiusMinPixels: 0.25,
+        radiusMaxPixels: 30,
+      }),
     ];
   }
 
   render() {
     const {
       viewState,
-      mapStyle = 'mapbox://styles/katamarani4/ck5s2p6mp3c0z1ip82z9g6cz4', 
-      theme = DEFAULT_THEME
+      mapStyle = 'mapbox://styles/spear5306/ckzcz5m8w002814o2coz02sjc',
+      theme = DEFAULT_THEME,
     } = this.props;
 
     return (
