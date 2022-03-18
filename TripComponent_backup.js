@@ -75,21 +75,6 @@ export default class App extends Component {
   }
 
   componentDidMount() {
-    fetch(DATA_URL.TRIPS)
-      .then((response) => response.json())
-      .then((findresponse) => {
-        const dict = {};
-        let idx = 0;
-        findresponse.map((item) => {
-          var path = item.path[item.path.length - 1];
-          var timestamp = item.timestamps[item.timestamps.length - 1];
-          dict[idx] = [timestamp, path];
-          idx += 1;
-        });
-        this.setState({
-          last: dict,
-        });
-      });
     this._animate();
   }
 
@@ -123,17 +108,6 @@ export default class App extends Component {
       trailLength = 180,
       theme = DEFAULT_THEME,
     } = this.props;
-
-    const arr = [];
-    if (typeof this.state.last === 'object') {
-      Object.keys(this.state.last).map((k, v) => {
-        var timestamp = this.state.last[k][0];
-        var path = this.state.last[k][1];
-        if (this.state.time >= timestamp) {
-          arr.push(path);
-        }
-      });
-    }
 
     return [
       // This is only needed when using shadow effects
@@ -173,13 +147,13 @@ export default class App extends Component {
 
       new ScatterplotLayer({
         id: 'scatterplot',
-        data: arr, // load data from server
-        getPosition: (d) => [d[0], d[1]], // get lng,lat from each point
-        getColor: (d) => [255, 255, 255],
+        data: points, // load data from server
+        getPosition: (d) => d.position, // get lng,lat from each point
+        getColor: (d) => [0, 188, 255],
         getRadius: (d) => 25,
         opacity: 0.9,
         pickable: false,
-        radiusMinPixels: 3,
+        radiusMinPixels: 0.25,
         radiusMaxPixels: 30,
       }),
     ];
